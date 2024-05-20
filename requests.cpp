@@ -32,26 +32,15 @@ string compute_get_request(const string &host, const string &url,
 	return message;
 }
 
-string compute_post_request(const string &host, const string &url, 
-							const string &content_type,
-							const vector<string> &body_data,
+string compute_post_request(const string &host, const string &url,
+							const string &body_data,
 							const vector<string> &cookies)
 {
 	string message = "";
-	string data = "";
-
 	message += "POST " + url + " HTTP/1.1\r\n";
 	message += "Host: " + host + "\r\n";
-	message += "Content-Type: " + content_type + "\r\n";
-
-	if (!body_data.empty()) {
-		for (size_t i = 0; i < body_data.size(); i++) {
-			data += body_data[i];
-			if (i < body_data.size() - 1)
-				data += "&";
-		}
-	}
-	message += "Content-Length: " + to_string(data.length()) + "\r\n";
+	message += "Content-Type: application/json\r\n";
+	message += "Content-Length: " + to_string(body_data.length()) + "\r\n";
 
 	if (!cookies.empty()) {
 		message += "Cookie: ";
@@ -63,6 +52,6 @@ string compute_post_request(const string &host, const string &url,
 		}
 	}
 
-	message += "\r\n" + data + "\r\n";
+	message += "\r\n" + body_data + "\r\n";
 	return message;
 }

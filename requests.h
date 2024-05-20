@@ -12,9 +12,8 @@ string compute_get_request(const string &host, const string &url,
 						   const vector<string> &cookies);
 
 // Computes and returns a POST request string
-string compute_post_request(const string &host, const string &url, 
-							const string &content_type,
-							const vector<string> &body_data,
+string compute_post_request(const string &host, const string &url,
+							const string &body_data,
 							const vector<string> &cookies);
 
 #endif
