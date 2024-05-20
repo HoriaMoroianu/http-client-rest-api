@@ -1,13 +1,20 @@
+// Copyright (c) 2024 Horia-Valentin MOROIANU
+
 #ifndef _REQUESTS_
 #define _REQUESTS_
 
-// computes and returns a GET request string (query_params
-// and cookies can be set to NULL if not needed)
-char *compute_get_request(char *host, char *url, char *query_params,
-							char **cookies, int cookies_count);
+#include <bits/stdc++.h>
+using namespace std;
 
-// computes and returns a POST request string (cookies can be NULL if not needed)
-char *compute_post_request(char *host, char *url, char* content_type, char **body_data,
-							int body_data_fields_count, char** cookies, int cookies_count);
+// Computes and returns a GET request string
+string compute_get_request(const string &host, const string &url,
+						   const string &query_params,
+						   const vector<string> &cookies);
+
+// Computes and returns a POST request string
+string compute_post_request(const string &host, const string &url, 
+							const string &content_type,
+							const vector<string> &body_data,
+							const vector<string> &cookies);
 
 #endif
