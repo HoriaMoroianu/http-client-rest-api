@@ -34,10 +34,12 @@ string extract_cookie(string &response);
 
 void register_handle(void);
 void login_handle(string &login_cookie);
+void enter_library_handle(string &login_cookie, string &library_access_token);
+void get_books_handle(string &library_access_token);
 
 int main(void)
 {
-	string user_input, login_cookie;
+	string user_input, login_cookie, library_access_token;
 	while (true) {
 		getline(cin, user_input);
 
@@ -45,9 +47,16 @@ int main(void)
 			register_handle();
 			continue;
 		}
-
 		if (user_input == "login") {
 			login_handle(login_cookie);
+			continue;
+		}
+		if (user_input == "enter_library") {
+			enter_library_handle(login_cookie, library_access_token);
+			continue;
+		}
+		if (user_input == "get_books") {
+			get_books_handle(library_access_token);
 			continue;
 		}
 
@@ -82,6 +91,12 @@ int extract_status_code(string &response)
 json extract_json_data(string &response)
 {
 	size_t data_pos = response.find("{\"");
+	if (data_pos == string::npos)
+		data_pos = response.find("[");
+
+	if (data_pos == string::npos)
+		return json({});
+
 	return json::parse(response.substr(data_pos));
 }
 
@@ -125,6 +140,7 @@ void register_handle(void)
 
 	string message = compute_post_request(server_host,
 										  "/api/v1/tema/auth/register",
+										  "",
 										  data.dump(4),
 										  vector<string>());
 
@@ -155,6 +171,7 @@ void login_handle(string &login_cookie)
 
 	string message = compute_post_request(server_host,
 										  "/api/v1/tema/auth/login",
+										  "",
 										  data.dump(4),
 										  vector<string>());
 
@@ -169,4 +186,44 @@ void login_handle(string &login_cookie)
 
 	string error_message = extract_json_data(response)["error"].get<string>();
 	cout << "Server Error: " << error_message << "\n";
+}
+
+void enter_library_handle(string &login_cookie, string &library_access_token)
+{
+	string message = compute_get_request(server_host.data(),
+										 "/api/v1/tema/library/access",
+										 "",
+										 "",
+										 vector<string>(1, login_cookie));
+
+	string response = fetch_server_response(message);
+	int status_code = extract_status_code(response);
+	json response_data = extract_json_data(response);
+
+	if (status_code == STATUS_OK) {
+		library_access_token = response_data["token"].get<string>();
+		cout << "Success: Library access granted.\n";
+		return;
+	}
+
+	cout << "Server Error: " << response_data["error"].get<string>() << "\n";
+}
+
+void get_books_handle(string &library_access_token)
+{
+	string message = compute_get_request(server_host.data(),
+										 "/api/v1/tema/library/books",
+										 "",
+										 library_access_token,
+										 vector<string>());
+
+	string response = fetch_server_response(message);
+	int status_code = extract_status_code(response);
+
+	if (status_code == STATUS_OK) {
+		cout << extract_json_data(response).dump(4) << "\n";
+		return;
+	}
+
+	cout << "Server Error: Library access denied!\n";
 }
