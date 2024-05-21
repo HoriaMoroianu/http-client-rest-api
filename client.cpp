@@ -40,6 +40,7 @@ void enter_library_handle(string &login_cookie, string &library_access_token);
 void get_books_handle(string &library_access_token);
 void get_book_handle(string &library_access_token);
 void add_book_handle(string &library_access_token);
+void delete_book_handle(string &library_access_token);
 
 int main(void)
 {
@@ -69,6 +70,10 @@ int main(void)
 		}
 		if (user_input == "add_book") {
 			add_book_handle(library_access_token);
+			continue;
+		}
+		if (user_input == "delete_book") {
+			delete_book_handle(library_access_token);
 			continue;
 		}
 
@@ -356,4 +361,35 @@ void add_book_handle(string &library_access_token)
 		return;
 	}
 	cout << "Server Error: Invalid book information!\n";
+}
+
+void delete_book_handle(string &library_access_token)
+{
+	string book_id;
+	cout << "id=";
+	getline(cin, book_id);
+
+	if (book_id.empty() || 
+		!all_of(book_id.begin(), book_id.end(), ::isdigit)) {
+		cout << "Error: Invalid book id!\n";
+		return;
+	}
+
+	string url = "/api/v1/tema/library/books/" + book_id;
+	string message = compute_delete_request(server_host.data(), url, 
+											library_access_token);
+
+	string response = fetch_server_response(message);
+	int status_code = extract_status_code(response);
+
+	if (status_code == STATUS_OK) {
+		cout << "Success: Book removed from the library.\n";
+		return;
+	}
+
+	if (status_code == STATUS_NOT_FOUND) {
+		cout << "Server Error: No book was found!\n";
+		return;
+	}
+	cout << "Server Error: Library access denied!\n";
 }

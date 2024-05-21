@@ -18,4 +18,8 @@ string compute_post_request(const string &host, const string &url,
 							const string &body_data,
 							const vector<string> &cookies);
 
+// Computes and returns a DELETE request string
+string compute_delete_request(const string &host, const string &url,
+							  const string &access_token);
+
 #endif

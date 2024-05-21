@@ -64,3 +64,15 @@ string compute_post_request(const string &host, const string &url,
 	message += "\r\n" + body_data + "\r\n";
 	return message;
 }
+
+string compute_delete_request(const string &host, const string &url,
+							  const string &access_token)
+{
+	string message = "";
+	message += "DELETE " + url + " HTTP/1.1\r\n";
+	message += "Host: " + host + "\r\n";
+	message += "Authorization: Bearer " + access_token + "\r\n";
+
+	message += "\r\n";
+	return message;
+}
