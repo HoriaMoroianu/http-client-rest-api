@@ -20,6 +20,8 @@ using json = nlohmann::json;
 
 #define STATUS_OK 200
 #define STATUS_CREATED 201
+#define STATUS_NOT_FOUND 404
+#define STATUS_FORBIDDEN 403
 
 const string server_host = "34.246.184.49";
 const uint16_t server_port = 8080;
@@ -36,6 +38,7 @@ void register_handle(void);
 void login_handle(string &login_cookie);
 void enter_library_handle(string &login_cookie, string &library_access_token);
 void get_books_handle(string &library_access_token);
+void get_book_handle(string &library_access_token);
 void add_book_handle(string &library_access_token);
 
 int main(void)
@@ -60,8 +63,10 @@ int main(void)
 			get_books_handle(library_access_token);
 			continue;
 		}
-
-
+		if (user_input == "get_book") {
+			get_book_handle(library_access_token);
+			continue;
+		}
 		if (user_input == "add_book") {
 			add_book_handle(library_access_token);
 			continue;
@@ -294,6 +299,38 @@ void get_books_handle(string &library_access_token)
 	cout << "Server Error: Library access denied!\n";
 }
 
+void get_book_handle(string &library_access_token)
+{
+	string book_id;
+	cout << "id=";
+	getline(cin, book_id);
+
+	if (book_id.empty() || 
+		!all_of(book_id.begin(), book_id.end(), ::isdigit)) {
+		cout << "Error: Invalid book id!\n";
+		return;
+	}
+
+	string url = "/api/v1/tema/library/books/" + book_id;
+	string message = compute_get_request(server_host.data(), url, "",
+										 library_access_token,
+										 vector<string>());
+
+	string response = fetch_server_response(message);
+	int status_code = extract_status_code(response);
+
+	if (status_code == STATUS_OK) {
+		cout << extract_json_data(response).dump(4) << "\n";
+		return;
+	}
+
+	if (status_code == STATUS_NOT_FOUND) {
+		cout << "Server Error: No book was found!\n";
+		return;
+	}
+	cout << "Server Error: Library access denied!\n";
+}
+
 void add_book_handle(string &library_access_token)
 {
 	json book_info;
@@ -314,5 +351,9 @@ void add_book_handle(string &library_access_token)
 		return;
 	}
 
-	cout << "Server Error: Library access denied!\n";
+	if (status_code == STATUS_FORBIDDEN) {
+		cout << "Server Error: Library access denied!\n";
+		return;
+	}
+	cout << "Server Error: Invalid book information!\n";
 }
