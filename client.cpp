@@ -134,13 +134,13 @@ int get_user_credentials(string &username, string &password)
 	cout << "username=";
 	getline(cin, username);
 
+	cout << "password=";
+	getline(cin, password);
+
 	if (username.empty() || username.find(' ') != username.npos) {
 		cout << "Error: Invalid username!\n";
 		return 1;
 	}
-
-	cout << "password=";
-	getline(cin, password);
 
 	if (password.empty() || password.find(' ') != password.npos) {
 		cout << "Error: Invalid password!\n";
@@ -155,42 +155,38 @@ int get_book_info(json &book_info)
 	cout << "title=";
 	getline(cin, title);
 
-	if (title.empty()) {
-		cout << "Error: Invalid title!\n";
-		return 1;
-	}
-
 	string author;
 	cout << "author=";
 	getline(cin, author);
-
-	if (author.empty()) {
-		cout << "Error: Invalid author!\n";
-		return 1;
-	}
 
 	string genre;
 	cout << "genre=";
 	getline(cin, genre);
 
-	if (genre.empty()) {
-		cout << "Error: Invalid genre!\n";
-		return 1;
-	}
-
 	string publisher;
 	cout << "publisher=";
 	getline(cin, publisher);
-
-	if (publisher.empty()) {
-		cout << "Error: Invalid publisher!\n";
-		return 1;
-	}
 
 	string page_count;
 	cout << "page_count=";
 	getline(cin, page_count);
 
+	if (title.empty()) {
+		cout << "Error: Invalid title!\n";
+		return 1;
+	}
+	if (author.empty()) {
+		cout << "Error: Invalid author!\n";
+		return 1;
+	}
+	if (genre.empty()) {
+		cout << "Error: Invalid genre!\n";
+		return 1;
+	}
+	if (publisher.empty()) {
+		cout << "Error: Invalid publisher!\n";
+		return 1;
+	}
 	if (page_count.empty() || 
 		!all_of(page_count.begin(), page_count.end(), ::isdigit)) {
 		cout << "Error: Invalid page_count!\n";
@@ -204,7 +200,6 @@ int get_book_info(json &book_info)
 		{ "publisher", publisher },
 		{ "page_count", stoi(page_count) }
 	};
-
 	return 0;
 }
 
