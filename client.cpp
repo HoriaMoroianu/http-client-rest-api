@@ -35,12 +35,13 @@ json extract_json_data(string &response);
 string extract_cookie(string &response);
 
 void register_handle(void);
-void login_handle(string &login_cookie);
+void login_handle(string &login_cookie, string &library_access_token);
 void enter_library_handle(string &login_cookie, string &library_access_token);
 void get_books_handle(string &library_access_token);
 void get_book_handle(string &library_access_token);
 void add_book_handle(string &library_access_token);
 void delete_book_handle(string &library_access_token);
+void logout_handle(string &login_cookie, string &library_access_token);
 
 int main(void)
 {
@@ -53,7 +54,7 @@ int main(void)
 			continue;
 		}
 		if (user_input == "login") {
-			login_handle(login_cookie);
+			login_handle(login_cookie, library_access_token);
 			continue;
 		}
 		if (user_input == "enter_library") {
@@ -74,6 +75,10 @@ int main(void)
 		}
 		if (user_input == "delete_book") {
 			delete_book_handle(library_access_token);
+			continue;
+		}
+		if (user_input == "logout") {
+			logout_handle(login_cookie, library_access_token);
 			continue;
 		}
 
@@ -232,10 +237,8 @@ void register_handle(void)
 	cout << "Server Error: " << error_message << "\n";
 }
 
-void login_handle(string &login_cookie)
+void login_handle(string &login_cookie, string &library_access_token)
 {
-	login_cookie = "";
-
 	string username, password;
 	if (get_user_credentials(username, password))
 		return;
@@ -256,6 +259,7 @@ void login_handle(string &login_cookie)
 
 	if (status_code == STATUS_OK) {
 		login_cookie = extract_cookie(response);
+		library_access_token = "";
 		cout << "Success: Logged in successfully.\n";
 		return;
 	}
@@ -392,4 +396,26 @@ void delete_book_handle(string &library_access_token)
 		return;
 	}
 	cout << "Server Error: Library access denied!\n";
+}
+
+void logout_handle(string &login_cookie, string &library_access_token)
+{
+	string message = compute_get_request(server_host,
+										 "/api/v1/tema/auth/logout",
+										 "",
+										 "",
+										 vector<string>(1, login_cookie));
+
+	string response = fetch_server_response(message);
+	int status_code = extract_status_code(response);
+
+	if (status_code == STATUS_OK) {
+		login_cookie = "";
+		library_access_token = "";
+		cout << "Success: User logged out.\n";
+		return;
+	}
+
+	string error_message = extract_json_data(response)["error"].get<string>();
+	cout << "Server Error: " << error_message << "\n";
 }
