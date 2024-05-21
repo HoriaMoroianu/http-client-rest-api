@@ -2,7 +2,6 @@
 
 #include <bits/stdc++.h>
 #include <string>
-#include <iostream>
 
 #include <stdlib.h>     /* exit, atoi, malloc, free */
 #include <unistd.h>     /* read, write, close */
@@ -27,6 +26,7 @@ const uint16_t server_port = 8080;
 
 string fetch_server_response(string &message);
 int get_user_credentials(string &username, string &password);
+int get_book_info(json &book_info);
 
 int extract_status_code(string &response);
 json extract_json_data(string &response);
@@ -36,6 +36,7 @@ void register_handle(void);
 void login_handle(string &login_cookie);
 void enter_library_handle(string &login_cookie, string &library_access_token);
 void get_books_handle(string &library_access_token);
+void add_book_handle(string &library_access_token);
 
 int main(void)
 {
@@ -57,6 +58,12 @@ int main(void)
 		}
 		if (user_input == "get_books") {
 			get_books_handle(library_access_token);
+			continue;
+		}
+
+
+		if (user_input == "add_book") {
+			add_book_handle(library_access_token);
 			continue;
 		}
 
@@ -90,9 +97,9 @@ int extract_status_code(string &response)
 
 json extract_json_data(string &response)
 {
-	size_t data_pos = response.find("{\"");
+	size_t data_pos = response.find("[");
 	if (data_pos == string::npos)
-		data_pos = response.find("[");
+		data_pos = response.find("{\"");
 
 	if (data_pos == string::npos)
 		return json({});
@@ -112,18 +119,77 @@ int get_user_credentials(string &username, string &password)
 	cout << "username=";
 	getline(cin, username);
 
-	if (username.find(' ') != username.npos) {
-		cout << "Error: No spaces allowed in usernames.\n";
+	if (username.empty() || username.find(' ') != username.npos) {
+		cout << "Error: Invalid username!\n";
 		return 1;
 	}
 
 	cout << "password=";
 	getline(cin, password);
 
-	if (password.find(' ') != password.npos) {
-		cout << "Error: No spaces allowed in passwords.\n";
+	if (password.empty() || password.find(' ') != password.npos) {
+		cout << "Error: Invalid password!\n";
 		return 1;
 	}
+	return 0;
+}
+
+int get_book_info(json &book_info)
+{
+	string title;
+	cout << "title=";
+	getline(cin, title);
+
+	if (title.empty()) {
+		cout << "Error: Invalid title!\n";
+		return 1;
+	}
+
+	string author;
+	cout << "author=";
+	getline(cin, author);
+
+	if (author.empty()) {
+		cout << "Error: Invalid author!\n";
+		return 1;
+	}
+
+	string genre;
+	cout << "genre=";
+	getline(cin, genre);
+
+	if (genre.empty()) {
+		cout << "Error: Invalid genre!\n";
+		return 1;
+	}
+
+	string publisher;
+	cout << "publisher=";
+	getline(cin, publisher);
+
+	if (publisher.empty()) {
+		cout << "Error: Invalid publisher!\n";
+		return 1;
+	}
+
+	string page_count;
+	cout << "page_count=";
+	getline(cin, page_count);
+
+	if (page_count.empty() || 
+		!all_of(page_count.begin(), page_count.end(), ::isdigit)) {
+		cout << "Error: Invalid page_count!\n";
+		return 1;
+	}
+
+	book_info = {
+		{ "title", title },
+		{ "author", author },
+		{ "genre", genre },
+		{ "publisher", publisher },
+		{ "page_count", stoi(page_count) }
+	};
+
 	return 0;
 }
 
@@ -222,6 +288,29 @@ void get_books_handle(string &library_access_token)
 
 	if (status_code == STATUS_OK) {
 		cout << extract_json_data(response).dump(4) << "\n";
+		return;
+	}
+
+	cout << "Server Error: Library access denied!\n";
+}
+
+void add_book_handle(string &library_access_token)
+{
+	json book_info;
+	if (get_book_info(book_info))
+		return;
+
+	string message = compute_post_request(server_host,
+										  "/api/v1/tema/library/books",
+										  library_access_token,
+										  book_info.dump(4),
+										  vector<string>());
+
+	string response = fetch_server_response(message);
+	int status_code = extract_status_code(response);
+
+	if (status_code == STATUS_OK) {
+		cout << "Success: Book added to the library.\n";
 		return;
 	}
 
