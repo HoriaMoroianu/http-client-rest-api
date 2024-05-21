@@ -19,19 +19,26 @@
 using namespace std;
 using json = nlohmann::json;
 
+#define STATUS_OK 200
 #define STATUS_CREATED 201
 
 const string server_host = "34.246.184.49";
 const uint16_t server_port = 8080;
 
 string fetch_server_response(string &message);
-void register_handle(void);
+int get_user_credentials(string &username, string &password);
+
 int extract_status_code(string &response);
+json extract_json_data(string &response);
+string extract_cookie(string &response);
+
+void register_handle(void);
+void login_handle(string &login_cookie);
 
 int main(void)
 {
+	string user_input, login_cookie;
 	while (true) {
-		string user_input;
 		getline(cin, user_input);
 
 		if (user_input == "register") {
@@ -39,6 +46,10 @@ int main(void)
 			continue;
 		}
 
+		if (user_input == "login") {
+			login_handle(login_cookie);
+			continue;
+		}
 
 		if (user_input == "exit")
 			break;
@@ -64,29 +75,48 @@ string fetch_server_response(string &message)
 int extract_status_code(string &response)
 {
 	string header = "HTTP/1.1 ";
-	int header_pos = response.find(header);
+	size_t header_pos = response.find(header);
 	return stoi(response.substr(header_pos + header.length(), 3));
 }
 
-void register_handle(void)
+json extract_json_data(string &response)
+{
+	size_t data_pos = response.find("{\"");
+	return json::parse(response.substr(data_pos));
+}
+
+string extract_cookie(string &response)
+{
+	int start_pos = response.find("connect.sid");
+	int end_pos = response.substr(start_pos).find(';');
+	return response.substr(start_pos, end_pos);
+}
+
+int get_user_credentials(string &username, string &password)
 {
 	cout << "username=";
-	string username;
 	getline(cin, username);
 
 	if (username.find(' ') != username.npos) {
 		cout << "Error: No spaces allowed in usernames.\n";
-		return;
+		return 1;
 	}
 
 	cout << "password=";
-	string password;
 	getline(cin, password);
 
 	if (password.find(' ') != password.npos) {
 		cout << "Error: No spaces allowed in passwords.\n";
-		return;
+		return 1;
 	}
+	return 0;
+}
+
+void register_handle(void)
+{
+	string username, password;
+	if (get_user_credentials(username, password))
+		return;
 
 	json data = {
 		{ "username", username },
@@ -101,9 +131,42 @@ void register_handle(void)
 	string response = fetch_server_response(message);
 	int status_code = extract_status_code(response);
 
-	if (status_code != STATUS_CREATED) {
-		cout << "Server Error: Username already taken.\n";
+	if (status_code == STATUS_CREATED) {
+		cout << "Success: Registration complete.\n";
 		return;
 	}
-	cout << "Success: Registration complete.\n";
+
+	string error_message = extract_json_data(response)["error"].get<string>();
+	cout << "Server Error: " << error_message << "\n";
+}
+
+void login_handle(string &login_cookie)
+{
+	login_cookie = "";
+
+	string username, password;
+	if (get_user_credentials(username, password))
+		return;
+	
+	json data = {
+		{ "username", username },
+		{ "password", password }
+	};
+
+	string message = compute_post_request(server_host,
+										  "/api/v1/tema/auth/login",
+										  data.dump(4),
+										  vector<string>());
+
+	string response = fetch_server_response(message);
+	int status_code = extract_status_code(response);
+
+	if (status_code == STATUS_OK) {
+		login_cookie = extract_cookie(response);
+		cout << "Success: Logged in successfully.\n";
+		return;
+	}
+
+	string error_message = extract_json_data(response)["error"].get<string>();
+	cout << "Server Error: " << error_message << "\n";
 }
