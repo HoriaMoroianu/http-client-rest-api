@@ -5,40 +5,22 @@
 #include <arpa/inet.h>
 
 #include "helpers.h"
-#include "requests.h"
+#include "client.hpp"
+#include "requests.hpp"
 #include "json.hpp"
 
 using namespace std;
 using json = nlohmann::json;
 
-#define STATUS_OK 200
-#define STATUS_CREATED 201
-#define STATUS_NOT_FOUND 404
-#define STATUS_FORBIDDEN 403
-
 const string server_host = "34.246.184.49";
 const uint16_t server_port = 8080;
 
-string fetch_server_response(string &message);
-int get_user_credentials(string &username, string &password);
-int get_book_info(json &book_info);
-
-int extract_status_code(string &response);
-json extract_json_data(string &response);
-string extract_cookie(string &response);
-
-void register_command(void);
-void login_command(string &login_cookie, string &library_access_token);
-void enter_library_command(string &login_cookie, string &library_access_token);
-void get_books_command(string &library_access_token);
-void get_book_command(string &library_access_token);
-void add_book_command(string &library_access_token);
-void delete_book_command(string &library_access_token);
-void logout_command(string &login_cookie, string &library_access_token);
-
 int main(void)
 {
-	string user_input, login_cookie, library_access_token;
+	string user_input;
+	string login_cookie = "";
+	string library_access_token = "";
+
 	while (true) {
 		getline(cin, user_input);
 
@@ -78,121 +60,6 @@ int main(void)
 		if (user_input == "exit")
 			break;
 	}
-
-	return 0;
-}
-
-string fetch_server_response(string &message)
-{
-	int sockfd = open_connection(server_host.data(), server_port, 
-								 AF_INET, SOCK_STREAM, 0);
-
-	send_to_server(sockfd, message.data());
-	char *recv = receive_from_server(sockfd);
-	close_connection(sockfd);
-
-	string response = recv;
-	free(recv);
-	return response;
-}
-
-int extract_status_code(string &response)
-{
-	string header = "HTTP/1.1 ";
-	size_t header_pos = response.find(header);
-	return stoi(response.substr(header_pos + header.length(), 3));
-}
-
-json extract_json_data(string &response)
-{
-	size_t data_pos = response.find("[");
-	if (data_pos == string::npos)
-		data_pos = response.find("{\"");
-
-	if (data_pos == string::npos)
-		return json({});
-
-	return json::parse(response.substr(data_pos));
-}
-
-string extract_cookie(string &response)
-{
-	int start_pos = response.find("connect.sid");
-	int end_pos = response.substr(start_pos).find(';');
-	return response.substr(start_pos, end_pos);
-}
-
-int get_user_credentials(string &username, string &password)
-{
-	cout << "username=";
-	getline(cin, username);
-
-	cout << "password=";
-	getline(cin, password);
-
-	if (username.empty() || username.find(' ') != username.npos) {
-		cout << "Error: Invalid username!\n";
-		return 1;
-	}
-
-	if (password.empty() || password.find(' ') != password.npos) {
-		cout << "Error: Invalid password!\n";
-		return 1;
-	}
-	return 0;
-}
-
-int get_book_info(json &book_info)
-{
-	string title;
-	cout << "title=";
-	getline(cin, title);
-
-	string author;
-	cout << "author=";
-	getline(cin, author);
-
-	string genre;
-	cout << "genre=";
-	getline(cin, genre);
-
-	string publisher;
-	cout << "publisher=";
-	getline(cin, publisher);
-
-	string page_count;
-	cout << "page_count=";
-	getline(cin, page_count);
-
-	if (title.empty()) {
-		cout << "Error: Invalid title!\n";
-		return 1;
-	}
-	if (author.empty()) {
-		cout << "Error: Invalid author!\n";
-		return 1;
-	}
-	if (genre.empty()) {
-		cout << "Error: Invalid genre!\n";
-		return 1;
-	}
-	if (publisher.empty()) {
-		cout << "Error: Invalid publisher!\n";
-		return 1;
-	}
-	if (page_count.empty() || 
-		!all_of(page_count.begin(), page_count.end(), ::isdigit)) {
-		cout << "Error: Invalid page_count!\n";
-		return 1;
-	}
-
-	book_info = {
-		{ "title", title },
-		{ "author", author },
-		{ "genre", genre },
-		{ "publisher", publisher },
-		{ "page_count", stoi(page_count) }
-	};
 	return 0;
 }
 
@@ -402,4 +269,118 @@ void logout_command(string &login_cookie, string &library_access_token)
 
 	string error_message = extract_json_data(response)["error"].get<string>();
 	cout << "Server Error: " << error_message << "\n";
+}
+
+string fetch_server_response(string &message)
+{
+	int sockfd = open_connection(server_host.data(), server_port, 
+								 AF_INET, SOCK_STREAM, 0);
+
+	send_to_server(sockfd, message.data());
+	char *recv = receive_from_server(sockfd);
+	close_connection(sockfd);
+
+	string response = recv;
+	free(recv);
+	return response;
+}
+
+int extract_status_code(string &response)
+{
+	string header = "HTTP/1.1 ";
+	size_t header_pos = response.find(header);
+	return stoi(response.substr(header_pos + header.length(), 3));
+}
+
+json extract_json_data(string &response)
+{
+	size_t data_pos = response.find("[");
+	if (data_pos == string::npos)
+		data_pos = response.find("{\"");
+
+	if (data_pos == string::npos)
+		return json({});
+
+	return json::parse(response.substr(data_pos));
+}
+
+string extract_cookie(string &response)
+{
+	int start_pos = response.find("connect.sid");
+	int end_pos = response.substr(start_pos).find(';');
+	return response.substr(start_pos, end_pos);
+}
+
+int get_user_credentials(string &username, string &password)
+{
+	cout << "username=";
+	getline(cin, username);
+
+	cout << "password=";
+	getline(cin, password);
+
+	if (username.empty() || username.find(' ') != username.npos) {
+		cout << "Error: Invalid username!\n";
+		return 1;
+	}
+
+	if (password.empty() || password.find(' ') != password.npos) {
+		cout << "Error: Invalid password!\n";
+		return 1;
+	}
+	return 0;
+}
+
+int get_book_info(json &book_info)
+{
+	string title;
+	cout << "title=";
+	getline(cin, title);
+
+	string author;
+	cout << "author=";
+	getline(cin, author);
+
+	string genre;
+	cout << "genre=";
+	getline(cin, genre);
+
+	string publisher;
+	cout << "publisher=";
+	getline(cin, publisher);
+
+	string page_count;
+	cout << "page_count=";
+	getline(cin, page_count);
+
+	if (title.empty()) {
+		cout << "Error: Invalid title!\n";
+		return 1;
+	}
+	if (author.empty()) {
+		cout << "Error: Invalid author!\n";
+		return 1;
+	}
+	if (genre.empty()) {
+		cout << "Error: Invalid genre!\n";
+		return 1;
+	}
+	if (publisher.empty()) {
+		cout << "Error: Invalid publisher!\n";
+		return 1;
+	}
+	if (page_count.empty() || 
+		!all_of(page_count.begin(), page_count.end(), ::isdigit)) {
+		cout << "Error: Invalid page_count!\n";
+		return 1;
+	}
+
+	book_info = {
+		{ "title", title },
+		{ "author", author },
+		{ "genre", genre },
+		{ "publisher", publisher },
+		{ "page_count", stoi(page_count) }
+	};
+	return 0;
 }

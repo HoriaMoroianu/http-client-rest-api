@@ -1,7 +1,7 @@
 // Copyright (c) 2024 Horia-Valentin MOROIANU
 
 #include <bits/stdc++.h>
-#include "requests.h"
+#include "requests.hpp"
 using namespace std;
 
 string compute_get_request(const string &host, const string &url,

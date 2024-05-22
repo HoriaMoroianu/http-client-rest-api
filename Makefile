@@ -1,3 +1,4 @@
+# Copyright (c) 2024 Horia-Valentin MOROIANU
 
 client: client.cpp requests.cpp helpers.cpp buffer.cpp
 	g++ -std=c++17 -Wall -Wextra client.cpp requests.cpp helpers.cpp buffer.cpp -o client
