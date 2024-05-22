@@ -1,14 +1,7 @@
 // Copyright (c) 2024 Horia-Valentin MOROIANU
 
 #include <bits/stdc++.h>
-#include <string>
-
-#include <stdlib.h>     /* exit, atoi, malloc, free */
-#include <unistd.h>     /* read, write, close */
-#include <string.h>     /* memcpy, memset */
-#include <sys/socket.h> /* socket, connect */
-#include <netinet/in.h> /* struct sockaddr_in, struct sockaddr */
-#include <netdb.h>      /* struct hostent, gethostbyname */
+#include <sys/socket.h>
 #include <arpa/inet.h>
 
 #include "helpers.h"
@@ -34,14 +27,14 @@ int extract_status_code(string &response);
 json extract_json_data(string &response);
 string extract_cookie(string &response);
 
-void register_handle(void);
-void login_handle(string &login_cookie, string &library_access_token);
-void enter_library_handle(string &login_cookie, string &library_access_token);
-void get_books_handle(string &library_access_token);
-void get_book_handle(string &library_access_token);
-void add_book_handle(string &library_access_token);
-void delete_book_handle(string &library_access_token);
-void logout_handle(string &login_cookie, string &library_access_token);
+void register_command(void);
+void login_command(string &login_cookie, string &library_access_token);
+void enter_library_command(string &login_cookie, string &library_access_token);
+void get_books_command(string &library_access_token);
+void get_book_command(string &library_access_token);
+void add_book_command(string &library_access_token);
+void delete_book_command(string &library_access_token);
+void logout_command(string &login_cookie, string &library_access_token);
 
 int main(void)
 {
@@ -50,35 +43,35 @@ int main(void)
 		getline(cin, user_input);
 
 		if (user_input == "register") {
-			register_handle();
+			register_command();
 			continue;
 		}
 		if (user_input == "login") {
-			login_handle(login_cookie, library_access_token);
+			login_command(login_cookie, library_access_token);
 			continue;
 		}
 		if (user_input == "enter_library") {
-			enter_library_handle(login_cookie, library_access_token);
+			enter_library_command(login_cookie, library_access_token);
 			continue;
 		}
 		if (user_input == "get_books") {
-			get_books_handle(library_access_token);
+			get_books_command(library_access_token);
 			continue;
 		}
 		if (user_input == "get_book") {
-			get_book_handle(library_access_token);
+			get_book_command(library_access_token);
 			continue;
 		}
 		if (user_input == "add_book") {
-			add_book_handle(library_access_token);
+			add_book_command(library_access_token);
 			continue;
 		}
 		if (user_input == "delete_book") {
-			delete_book_handle(library_access_token);
+			delete_book_command(library_access_token);
 			continue;
 		}
 		if (user_input == "logout") {
-			logout_handle(login_cookie, library_access_token);
+			logout_command(login_cookie, library_access_token);
 			continue;
 		}
 
@@ -203,7 +196,7 @@ int get_book_info(json &book_info)
 	return 0;
 }
 
-void register_handle(void)
+void register_command(void)
 {
 	string username, password;
 	if (get_user_credentials(username, password))
@@ -217,8 +210,7 @@ void register_handle(void)
 	string message = compute_post_request(server_host,
 										  "/api/v1/tema/auth/register",
 										  "",
-										  data.dump(4),
-										  vector<string>());
+										  data.dump());
 
 	string response = fetch_server_response(message);
 	int status_code = extract_status_code(response);
@@ -232,7 +224,7 @@ void register_handle(void)
 	cout << "Server Error: " << error_message << "\n";
 }
 
-void login_handle(string &login_cookie, string &library_access_token)
+void login_command(string &login_cookie, string &library_access_token)
 {
 	string username, password;
 	if (get_user_credentials(username, password))
@@ -243,11 +235,10 @@ void login_handle(string &login_cookie, string &library_access_token)
 		{ "password", password }
 	};
 
-	string message = compute_post_request(server_host,
+	string message = compute_post_request(server_host, 
 										  "/api/v1/tema/auth/login",
 										  "",
-										  data.dump(4),
-										  vector<string>());
+										  data.dump());
 
 	string response = fetch_server_response(message);
 	int status_code = extract_status_code(response);
@@ -263,13 +254,12 @@ void login_handle(string &login_cookie, string &library_access_token)
 	cout << "Server Error: " << error_message << "\n";
 }
 
-void enter_library_handle(string &login_cookie, string &library_access_token)
+void enter_library_command(string &login_cookie, string &library_access_token)
 {
-	string message = compute_get_request(server_host.data(),
+	string message = compute_get_request(server_host,
 										 "/api/v1/tema/library/access",
 										 "",
-										 "",
-										 vector<string>(1, login_cookie));
+										 login_cookie);
 
 	string response = fetch_server_response(message);
 	int status_code = extract_status_code(response);
@@ -284,13 +274,12 @@ void enter_library_handle(string &login_cookie, string &library_access_token)
 	cout << "Server Error: " << response_data["error"].get<string>() << "\n";
 }
 
-void get_books_handle(string &library_access_token)
+void get_books_command(string &library_access_token)
 {
-	string message = compute_get_request(server_host.data(),
+	string message = compute_get_request(server_host,
 										 "/api/v1/tema/library/books",
-										 "",
 										 library_access_token,
-										 vector<string>());
+										 "");
 
 	string response = fetch_server_response(message);
 	int status_code = extract_status_code(response);
@@ -303,7 +292,7 @@ void get_books_handle(string &library_access_token)
 	cout << "Server Error: Library access denied!\n";
 }
 
-void get_book_handle(string &library_access_token)
+void get_book_command(string &library_access_token)
 {
 	string book_id;
 	cout << "id=";
@@ -316,9 +305,10 @@ void get_book_handle(string &library_access_token)
 	}
 
 	string url = "/api/v1/tema/library/books/" + book_id;
-	string message = compute_get_request(server_host.data(), url, "",
+	string message = compute_get_request(server_host,
+										 url,
 										 library_access_token,
-										 vector<string>());
+										 "");
 
 	string response = fetch_server_response(message);
 	int status_code = extract_status_code(response);
@@ -335,7 +325,7 @@ void get_book_handle(string &library_access_token)
 	cout << "Server Error: Library access denied!\n";
 }
 
-void add_book_handle(string &library_access_token)
+void add_book_command(string &library_access_token)
 {
 	json book_info;
 	if (get_book_info(book_info))
@@ -344,8 +334,7 @@ void add_book_handle(string &library_access_token)
 	string message = compute_post_request(server_host,
 										  "/api/v1/tema/library/books",
 										  library_access_token,
-										  book_info.dump(4),
-										  vector<string>());
+										  book_info.dump());
 
 	string response = fetch_server_response(message);
 	int status_code = extract_status_code(response);
@@ -362,7 +351,7 @@ void add_book_handle(string &library_access_token)
 	cout << "Server Error: Invalid book information!\n";
 }
 
-void delete_book_handle(string &library_access_token)
+void delete_book_command(string &library_access_token)
 {
 	string book_id;
 	cout << "id=";
@@ -375,7 +364,8 @@ void delete_book_handle(string &library_access_token)
 	}
 
 	string url = "/api/v1/tema/library/books/" + book_id;
-	string message = compute_delete_request(server_host.data(), url, 
+	string message = compute_delete_request(server_host,
+											url,
 											library_access_token);
 
 	string response = fetch_server_response(message);
@@ -393,13 +383,12 @@ void delete_book_handle(string &library_access_token)
 	cout << "Server Error: Library access denied!\n";
 }
 
-void logout_handle(string &login_cookie, string &library_access_token)
+void logout_command(string &login_cookie, string &library_access_token)
 {
 	string message = compute_get_request(server_host,
 										 "/api/v1/tema/auth/logout",
 										 "",
-										 "",
-										 vector<string>(1, login_cookie));
+										 login_cookie);
 
 	string response = fetch_server_response(message);
 	int status_code = extract_status_code(response);
